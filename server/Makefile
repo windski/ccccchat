@@ -4,11 +4,14 @@ cflag = --std=c99
 all: main.c libchating.so
 	$(cc) main.c -lchating -L. -o main
 
-libchating.so: translatlib.o
-	$(cc) translatlib.o --shared -fPIC -o libchating.so
+libchating.so: translatlib.o utils.o
+	$(cc) translatlib.o utils.o --shared -fPIC -o libchating.so
 
-translatlib.o: translatlib.h translatlib.c
-	$(cc) -c translatlib.c -o translatlib.o --shared -fPIC
+translatlib.o: translatlib.c
+	$(cc) -c translatlib.c -o translatlib.o -fPIC
+
+utils.o: utils.c
+	$(cc) -c utils.c -o utils.o -fPIC
 
 .PHONY: clean install
 

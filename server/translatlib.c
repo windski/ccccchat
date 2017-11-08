@@ -1,4 +1,5 @@
 #include "translatlib.h"
+#include "utils.h"
 
 int configure(const char *host, int port)
 {
@@ -149,9 +150,49 @@ int run(int sockfd)
 }
 
 
+char *get_request_body(const char *msg)
+{
+    char *tmp = strchr(msg, '\r');
+    if(*(tmp + 1) == '\n') {
+        return tmp + 2;
+    } else {
+        return NULL;
+    }
+}
+
+
 int user_login(const char *login_mes)
 {
+    int fir_len = 6;
+    user_info user;
+    init_struct(user);
 
+    char *body = get_request_body(login_mes);
+    char **first_info = apply_2d_arr(fir_len, MAX_MSG_INFO);
+
+    if(split_str(body, ';', first_info, &fir_len) < 0) {
+        printf("login protocol has a error..\n");
+        free_2d_arr(first_info, fir_len);
+        return -1;
+    }
+
+    int sec_len = 4;
+    char **second_info = apply_2d_arr(sec_len, MAX_MSG_INFO);
+
+    for(int i = 0; i < fir_len; i++) {
+        if(split_str(first_info[i], ':', second_info, &sec_len) < 0) {
+            printf("login info has a error..\n");
+            free_2d_arr(first_info, fir_len);
+            free_2d_arr(second_info, sec_len);
+            return -1;
+        }
+    }
+    free_2d_arr(first_info, fir_len);
+
+    //TODO: add sql operating....
+
+    free_2d_arr(second_info, sec_len);
+    return 0;
 }
 
 

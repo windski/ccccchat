@@ -17,12 +17,18 @@
 
 #define bzero(a, b) (memset(a, 0, b))
 
+#define init_struct(a) (bzero(&(a), sizeof(a)))
+
 #ifndef MAXLEN
 #define MAXLEN 1024
 #endif
 
 #ifndef MAX_EVENTS
 #define MAX_EVENTS 1024
+#endif
+
+#ifndef MAX_MSG_INFO
+#define MAX_MSG_INFO 512
 #endif
 
 
@@ -57,5 +63,6 @@ extern int user_login(const char *login_mes);
 extern int user_logoff(const char *logoff_mes);
 extern mes_t judge_mes(const char *buff);
 extern int exchange_message(const char *messages);
+extern char *get_request_body(const char *msg);
 
 #endif
