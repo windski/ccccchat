@@ -75,6 +75,8 @@ int core(int sockfd)
         printf("??\n");
         break;
     }
+
+    return 0;
 }
 
 
@@ -90,6 +92,7 @@ mes_t judge_mes(const char *buff)
         case 'o':
             return logout;
     }
+    return unkonwn;
 }
 
 
@@ -161,48 +164,71 @@ char *get_request_body(const char *msg)
 }
 
 
-int user_login(const char *login_mes)
+pair_t *parse_info(const char *msg)
 {
     int fir_len = 6;
-    user_info user;
-    init_struct(user);
 
-    char *body = get_request_body(login_mes);
+    char *body = get_request_body(msg);
     char **first_info = apply_2d_arr(fir_len, MAX_MSG_INFO);
 
-    if(split_str(body, ';', first_info, &fir_len) < 0) {
-        printf("login protocol has a error..\n");
+    int f_tmp;
+    if((f_tmp = split_str(body, ';', first_info, fir_len)) < 0) {
+        printf("protocol has a error..\n");
         free_2d_arr(first_info, fir_len);
-        return -1;
+        return NULL;
     }
 
-    int sec_len = 4;
+    int sec_len = fir_len * 2;
     char **second_info = apply_2d_arr(sec_len, MAX_MSG_INFO);
 
-    for(int i = 0; i < fir_len; i++) {
-        if(split_str(first_info[i], ':', second_info, &sec_len) < 0) {
-            printf("login info has a error..\n");
+    int s_tmp;
+    for(int i = 0; i < f_tmp; i++) {
+        if((s_tmp = split_str(first_info[i], ':', second_info, sec_len)) < 0) {
+            printf("protocol info has a error..\n");
             free_2d_arr(first_info, fir_len);
             free_2d_arr(second_info, sec_len);
-            return -1;
+            return NULL;
         }
     }
     free_2d_arr(first_info, fir_len);
 
+    pair_t *kv_data = make_kv_pair(second_info, s_tmp);
+    free_2d_arr(second_info, sec_len);
+
+    return kv_data;
+}
+
+
+int user_login(const char *login_mes)
+{
+    user_info user;
+    init_struct(user);
+
+    pair_t *kv_data = NULL;
+    kv_data = parse_info(login_mes);
+
     //TODO: add sql operating....
 
-    free_2d_arr(second_info, sec_len);
+    free_kv_pair(kv_data);
     return 0;
 }
 
 
 int user_logoff(const char *logoff_mes)
 {
+    pair_t *kv_data = NULL;
+    kv_data = parse_info(logoff_mes);
 
+    // TODO: add sothing.....
+
+    free_kv_pair(kv_data);
+    return 0;
 }
 
 
 int exchange_message(const char *messages)
 {
 
+    return 0;
 }
+

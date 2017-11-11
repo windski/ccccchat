@@ -36,6 +36,7 @@ typedef enum {
     login,
     message,
     logout,
+    unkonwn
 } mes_t;
 
 typedef enum {

@@ -20,15 +20,15 @@ void free_2d_arr(char **target, int m)
 }
 
 int split_str(char *source, const char ch,
-        char **target, int *array_len)
+        char **target, int array_len)
 {
     char *tmp = strchr(source, ch);
     char *tmp_sr = source;
 
     int i = 0;
     while(tmp) {
-        if(i >= *array_len) {
-            array_len = &i;
+        if(i >= array_len) {
+            // array_len = i;
             return -1;
         }
 
@@ -38,5 +38,34 @@ int split_str(char *source, const char ch,
         i++;
     }
     return i;
+}
+
+
+pair_t *make_kv_pair(char **info, int fir)
+{
+    if(fir % 2) {
+        fputs("make info to pair failure..\n", stderr);
+        return NULL;
+    }
+
+    pair_t *head = (pair_t *)malloc(sizeof(pair_t));
+
+    head->length = fir / 2;
+
+    struct elem *data = (struct elem *)malloc(sizeof(struct elem) * (head->length));
+
+    for(int i = 0; i < fir; i += 2) {
+        strncpy(data->key, info[i], sizeof(data->key));
+        strncpy(data->value, info[i + 1], sizeof(data->value));
+    }
+    
+    return head;
+}
+
+
+void free_kv_pair(pair_t *target)
+{
+    free(target->data);
+    free(target);
 }
 
