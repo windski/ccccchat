@@ -1,17 +1,13 @@
-cc = gcc
-cflag = --std=c99
+CC = gcc
+CFLAGS = --std=c99
 
-all: main.c libchating.so
-	$(cc) main.c -lchating -L. -o main
+OBJS = translatlib.o utils.o main.o rb_tree.o
 
-libchating.so: translatlib.o utils.o
-	$(cc) translatlib.o utils.o --shared -fPIC -o libchating.so
+all: $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o main
 
-translatlib.o: translatlib.c
-	$(cc) -c translatlib.c -o translatlib.o -fPIC
-
-utils.o: utils.c
-	$(cc) -c utils.c -o utils.o -fPIC
+.c.o:
+	$(CC) -c $(FLAGS) $< -o $*.o
 
 .PHONY: clean install
 
