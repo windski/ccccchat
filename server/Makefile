@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = --std=c99
+CFLAGS = -std=c99 -Wall
 
 OBJS = translatlib.o utils.o main.o rb_tree.o
 
