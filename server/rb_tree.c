@@ -298,12 +298,9 @@ void rb_destroy_process(rb_node_t *root)
     if(root == NULL) {
         return ;
     }
-    if(root->left != NULL) {
-        return rb_destroy_process(root->left);
-    }
-    if(root->right != NULL) {
-        return rb_destroy_process(root->right);
-    }
+
+    rb_destroy_process(root->left);
+    rb_destroy_process(root->right);
 
     free(root);
     root = NULL;
