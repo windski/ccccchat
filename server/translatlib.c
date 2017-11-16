@@ -1,5 +1,6 @@
 #include "translatlib.h"
 #include "utils.h"
+#include "rb_tree.h"
 
 int configure(const char *host, int port)
 {
@@ -61,15 +62,18 @@ int core(int sockfd)
     mes_t mess;
     mess = judge_mes(buff);
 
+    tree_head_t user_table;
+    init_tree_header(&user_table);
+
     switch(mess) {
     case login:
-        user_login(buff);
+        user_login(&user_table, buff);
         break;
     case logout:
-        user_logoff(buff);
+        user_logoff(&user_table, buff);
         break;
     case message:
-        exchange_message(buff);
+        exchange_message(&user_table, buff);
         break;
     default:
         printf("??\n");
@@ -164,57 +168,26 @@ char *get_request_body(const char *msg)
 }
 
 
-pair_t *parse_info(const char *msg)
+int user_login(tree_head_t *user_table, const char *login_mes)
 {
-    int fir_len = 6;
-
-    char *body = get_request_body(msg);
-    char **first_info = apply_2d_arr(fir_len, MAX_MSG_INFO);
-
-    int f_tmp;
-    if((f_tmp = split_str(body, ';', first_info, fir_len)) < 0) {
-        printf("protocol has a error..\n");
-        free_2d_arr(first_info, fir_len);
-        return NULL;
-    }
-
-    int sec_len = fir_len * 2;
-    char **second_info = apply_2d_arr(sec_len, MAX_MSG_INFO);
-
-    int s_tmp;
-    for(int i = 0; i < f_tmp; i++) {
-        if((s_tmp = split_str(first_info[i], ':', second_info, sec_len)) < 0) {
-            printf("protocol info has a error..\n");
-            free_2d_arr(first_info, fir_len);
-            free_2d_arr(second_info, sec_len);
-            return NULL;
-        }
-    }
-    free_2d_arr(first_info, fir_len);
-
-    pair_t *kv_data = make_kv_pair(second_info, s_tmp);
-    free_2d_arr(second_info, sec_len);
-
-    return kv_data;
-}
-
-
-int user_login(const char *login_mes)
-{
-    user_info user;
+    user_info_t user;
     init_struct(user);
 
     pair_t *kv_data = NULL;
     kv_data = parse_info(login_mes);
 
-    //TODO: add sql operating....
+    if(search_user(user_table, kv_data) == 0) {
+        // insert_user(user_table, kv_data);
+    } else {
+        // register frist..
+    }
 
     free_kv_pair(kv_data);
     return 0;
 }
 
 
-int user_logoff(const char *logoff_mes)
+int user_logoff(tree_head_t *user_table, const char *logoff_mes)
 {
     pair_t *kv_data = NULL;
     kv_data = parse_info(logoff_mes);
@@ -226,7 +199,7 @@ int user_logoff(const char *logoff_mes)
 }
 
 
-int exchange_message(const char *messages)
+int exchange_message(tree_head_t *user_table, const char *messages)
 {
 
     return 0;

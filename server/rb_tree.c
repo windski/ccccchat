@@ -1,10 +1,12 @@
 #include "rb_tree.h"
+#include "utils.h"
+#include "translatlib.h"
 
 /* left-rotate: x is target
  *      px                              px
  *     /                               /
  *    x                               y
- *   /  \    -(left rotate)->        / \
+ *   /  \    -(left rotate)-->       / \
  *  lx   y                          x  ry
  *     /   \                       /  \
  *    ly   ry                     lx  ly
@@ -37,7 +39,7 @@ void rb_left_rotate(tree_head_t *head, rb_node_t *x)
  *           py                               py
  *           /                                /
  *          y                                x
- *         /  \     -(right rotate)->       /  \
+ *         /  \     -(right rotate)-->      /  \
  *        x   ry                           lx   y
  *       / \                                   / \
  *      lx  rx                                rx  ry
@@ -310,5 +312,30 @@ void rb_destroy_process(rb_node_t *root)
 void init_tree_header(tree_head_t *head)
 {
     memset(head, 0, sizeof(*head));
+}
+
+
+void init_tree_node(rb_node_t *node)
+{
+    node->data = NULL;
+    node->parent = NULL;
+    node->left = NULL;
+    node->right = NULL;
+}
+
+
+int rb_search(rb_node_t *head, char *target)
+{
+    if(head || target) {
+        return -1;
+    }
+
+    if(strcmp(head->data->user_name, target) == 0) {
+        return 0;
+    } else if(str_lt(head->data->user_name, target) == 0) {
+        rb_search(head->left, target);
+    } else {
+        rb_search(head->right, target);
+    }
 }
 

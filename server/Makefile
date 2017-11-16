@@ -7,7 +7,7 @@ all: $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o main
 
 .c.o:
-	$(CC) -c $(FLAGS) $< -o $*.o
+	$(CC) -c $(CFLAGS) $< -o $*.o
 
 .PHONY: clean install
 

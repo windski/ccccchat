@@ -1,13 +1,16 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#include "translatlib.h"
+#include "comm_struct.h"
 
 #define get_str_len(a, b) (((b) - (a)) / sizeof(char))
 
 #ifndef ELEMSIZE
 #define ELEMSIZE 32
 #endif
+
+extern int str_lt(char *l, char *r);
+extern int str_bt(char *l, char *r);
 
 
 struct elem{
@@ -32,5 +35,11 @@ extern pair_t *make_kv_pair(char **info, int fir);
 extern void free_kv_pair(pair_t *target);
 
 extern pair_t *parse_info(const char *msg);
+
+extern int search_user(tree_head_t *user_table, pair_t *data);
+extern char *get_kv_value(pair_t *data, char *target);
+
+extern void insert_user(tree_head_t *user_table, pair_t *data);
+
 
 #endif
