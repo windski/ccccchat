@@ -65,19 +65,17 @@ int core(int sockfd)
     tree_head_t user_table;
     init_tree_header(&user_table);
 
+    // TODO: using multithread..
+
     switch(mess) {
     case login:
-        user_login(&user_table, buff);
-        break;
+        return user_login(sockfd, &user_table, buff);
     case logout:
-        user_logoff(&user_table, buff);
-        break;
+        return user_logoff(sockfd, &user_table, buff);
     case message:
-        exchange_message(&user_table, buff);
-        break;
+        return exchange_message(&user_table, buff);
     default:
         printf("??\n");
-        break;
     }
 
     return 0;
@@ -168,7 +166,7 @@ char *get_request_body(const char *msg)
 }
 
 
-int user_login(tree_head_t *user_table, const char *login_mes)
+int user_login(int sockfd, tree_head_t *user_table, const char *login_mes)
 {
     user_info_t user;
     init_struct(user);
@@ -179,15 +177,21 @@ int user_login(tree_head_t *user_table, const char *login_mes)
     if(search_user(user_table, kv_data) == 0) {
         // insert_user(user_table, kv_data);
     } else {
-        // register frist..
+        char buff[MAX_MSG_INFO];
+        memset(buff, 0, sizeof(buff));
+
+        sprintf(buff, "%s\r\n%s\r\n\r\n", "[ERROR]", "Can't search the target User.");
+        write(sockfd, buff, sizeof(buff));
     }
+
+    close(sockfd);
 
     free_kv_pair(kv_data);
     return 0;
 }
 
 
-int user_logoff(tree_head_t *user_table, const char *logoff_mes)
+int user_logoff(int sockfd, tree_head_t *user_table, const char *logoff_mes)
 {
     pair_t *kv_data = NULL;
     kv_data = parse_info(logoff_mes);

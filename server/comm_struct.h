@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
+#include <signal.h>
+#include <assert.h>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -31,6 +33,8 @@
 #define MAX_USER_L 32
 #endif
 
+typedef struct tm tm_t;
+
 typedef enum {
     login,
     message,
@@ -49,9 +53,9 @@ typedef struct {
 } mes_buf_t;
 
 typedef struct {
-    time_t login_tm;
-    time_t logout_tm;
-    time_t last_active_tm;
+    tm_t login_tm;
+    tm_t logout_tm;
+    tm_t last_active_tm;
     status_t status;
     char user_name[MAX_USER_L];
     mes_buf_t mes_buff;

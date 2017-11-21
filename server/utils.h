@@ -41,5 +41,11 @@ extern char *get_kv_value(pair_t *data, char *target);
 
 extern void insert_user(tree_head_t *user_table, pair_t *data);
 
+#if defined (__linux__)
+extern void encryption(char *target, int len);
+#else
+#define encryption(a, b) (printf("Please implement your own encryption algorithm..!"))
+#endif
+
 
 #endif
