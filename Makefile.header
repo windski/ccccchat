@@ -1,0 +1,5 @@
+CC = gcc
+CXX = g++
+CFLAGS = -Wall -std=c11
+LDFLAGS = -lpthread
+

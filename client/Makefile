@@ -1,15 +1,15 @@
 include ../Makefile.header
 
-OBJS = server.o
+.PHONY: clean 
+
+OBJS = client.o
 
 server: $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) -o server
+	$(CC) $(LDFLAGS) $(OBJS) -o client 
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $*.o
 
-.PHONY: clean all
-
 clean:
-	rm *.o server
+	rm *.o client
 
