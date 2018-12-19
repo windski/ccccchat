@@ -1,68 +1,23 @@
-#define _GNU_SOURCE 1
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
+#include "core.h"
+#include "utils.h"
+#include "socket.h"
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <poll.h>
-#include <fcntl.h>
-#include <assert.h>
 #include <netinet/in.h>
-#include <fcntl.h>
-#include <errno.h>
-
-#define BUFFSIZE 4096
-#define _LIMIT 65535
-
-typedef struct {
-    struct sockaddr_in useraddr;
-    char *write_buff;
-    char read_buff[BUFFSIZE];
-} user_t;
-
-int setnonblocking(int fd)
-{
-    int flag;
-    if((flag = fcntl(fd, F_GETFL)) < 0) {
-        perror("get fcntl failure");
-        exit(-1);
-    }
-
-    flag |= O_NONBLOCK;
-
-    if(fcntl(fd, F_SETFL) < 0) {
-        perror("set fcntl failure");
-        exit(-1);
-    }
-
-    return flag;
-}
 
 int main(int argc, char *args[])
 {
+    int ret;
     if(argc != 2) {
         printf("usage: %s port number\n", args[0]);
         return 1;
     }
 
-    struct sockaddr_in sockaddr;
-    bzero(&sockaddr, sizeof(sockaddr));
-    sockaddr.sin_port = htons(atoi(args[1]));
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = INADDR_ANY;
+    int sockfd = create_socket(NULL, atoi(args[1]));
 
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    assert(sockfd >= 0);
-
-    if(bind(sockfd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) != 0) {
-        printf("can't bind the address or port\n");
-        return -1;
-    }
-
-    int ret = listen(sockfd, 1024);
-    assert(ret != -1);
+    make_listen(sockfd, 1024);
 
     user_t *users = (user_t *)malloc(sizeof(user_t) * _LIMIT);
 
