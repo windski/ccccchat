@@ -1,6 +1,6 @@
 include ../Makefile.header
 
-OBJS = server.o
+OBJS = server.o utils.o socket.o thread_pool.o
 
 server: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o server
