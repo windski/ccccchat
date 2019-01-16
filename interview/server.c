@@ -1,7 +1,7 @@
 #include "core.h"
 #include "socket.h"
 #include <sys/epoll.h>
-
+#include <dirent.h>
 
 void setnonblocking(int fd)
 {
@@ -9,14 +9,14 @@ void setnonblocking(int fd)
 
     if((flags = fcntl(fd, F_GETFL)) < 0) {
         perror("fcntl: get the flags failure");
-        return ;
+        exit(-3);
     }
 
     flags |= O_NONBLOCK;
 
-    if((flags = fcntl(fd, F_SETFL)) < 0) {
+    if((fcntl(fd, F_SETFL)) < 0) {
         perror("fcntl: set the flags failure");
-        return ;
+        exit(-4);
     }
 }
 
@@ -34,10 +34,81 @@ void addfd(int epollfd, int fd)
     setnonblocking(fd);
 }
 
+
+void removefd(int epollfd, int fd)
+{
+    assert(epollfd > 0);
+    assert(fd > 0);
+
+    // There is a bug in Linux Kernel before 2.6.9, more details check it in man pages.
+    // I don't care cuz....
+    epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL);
+}
+
+
+char *get_check_filename(const char *buff)
+{
+    assert(buff != NULL);
+
+    // get the name
+    char *name = strstr(buff, "get") + 3;
+    if(name == NULL) {
+        return NULL;
+    }
+
+    // skip all spaces.
+    while(*(++name) == ' ' && *name);
+
+    //check it out if exist.
+    DIR *direct = opendir(".");
+    struct dirent *dirinfo;
+    while((dirinfo = readdir(direct)) != NULL) {
+        if(strcmp(dirinfo->d_name, name) == 0) {
+            closedir(direct);
+            return name;
+        }
+    }
+
+    closedir(direct);
+    return NULL;
+}
+
+
+uint64_t get_filesize(const char *name)
+{
+    uint64_t filesize = -1;
+    struct stat status;
+    if(stat(name, &status) < 0) {
+        fprintf(stderr, "get file status failure\n");
+        return filesize;
+    } else {
+        filesize = status.st_size;
+    }
+
+    return filesize;
+}
+
+
+void trans_data(int sockfd, const char *name)
+{
+    char buff[BUFFSIZE];
+    uint64_t filesize = get_filesize(name);
+    sprintf(buff, "%lu", filesize);
+    send(sockfd, buff, 4, 0);
+
+    int filefd = open(name, O_RDONLY);
+    if(sendfile(sockfd, filefd, NULL, filesize) < 0) {
+        perror("sendfile: send file failure");
+    }
+
+    close(filefd);
+}
+
+
 int main(int argc, const char *args[])
 {
     if(argc < 2) {
-        fprintf(stderr, "usage: %s -p <port>\n", args[0]);
+        fprintf(stderr, "usage: %s <port>\n", args[0]);
         exit(-1);
     }
 
@@ -79,20 +150,42 @@ int main(int argc, const char *args[])
 
                 // receive 4 bytes data, firstly.
                 ssize_t count = recv(events[i].data.fd, buff, 4, 0);
-                if(count < 0) {
-                    perror("recv: failure");
-                    break;
-                } else if(count == 0) {
-                    // TODO: remove fd from epollfd.
+                if(count == 0) {
+                    removefd(epollfd, events[i].data.fd);
                     close(events[i].data.fd);
+                    continue;
+                } else if(count < 0) {
+                    perror("recv: failure");
+                    continue;
                 }
                 printf("count: %s\n", buff);
 
                 count = atoi(buff);
+                if(count == 0) {
+                    continue;
+                }
+                bzero(buff, sizeof(buff));
+
+                // receive a command.
                 count = recv(events[i].data.fd, buff, count, 0);
 
                 printf("buff: %s\n", buff);
+
+                char *name = get_check_filename(buff);
+                if(name == NULL) {
+                    // get the wrong file.
+                    send(events[i].data.fd, "-1 ", 4, 0);
+                    // send the tips.
+                    send(events[i].data.fd, "file is not exist.", 19, 0);
+                    continue;
+                }
+
+                trans_data(events[i].data.fd, name);
+                // Just close the connection when the file were sent.23333
+                removefd(epollfd, events[i].data.fd);
+                close(events[i].data.fd);
             }
+
         }
     }
 

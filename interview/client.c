@@ -3,12 +3,11 @@
 
 int main(int argc, const char *args[])
 {
-    if(argc < 2) {
-        fprintf(stderr, "usage: %s -a <ip> -p <port>", args[0]);
+    if(argc <= 2) {
+        fprintf(stderr, "usage: %s <ip> <port>", args[0]);
         exit(-1);
     }
 
-    int m_stop = 0;
     const char *ip = args[1];
     int port = atoi(args[2]);
 
@@ -39,9 +38,8 @@ int main(int argc, const char *args[])
     fds[1].revents = 0;
 
     char buff[BUFFSIZE];
-    bzero(&buff, sizeof(buff));
 
-    while(!m_stop) {
+    while(1) {
         int ret = poll(fds, 2, -1);
         if(ret < 0) {
             perror("poll failure");
@@ -49,33 +47,74 @@ int main(int argc, const char *args[])
         }
 
         if(fds[1].revents & POLLRDHUP) {
-            // server may restart
+            // server may dropped.
             fprintf(stderr, "server close the conntion\n");
-            m_stop = 1;
+            break;
         } else if(fds[1].revents & POLLIN) {
-            // TODO: fin.
+            // receive the data.
+            bzero(buff, sizeof(buff));
+
+            char size_buf[1024];
+            if(recv(sockfd, size_buf, 4, 0) < 0) {
+                perror("recv: Something goes error.");
+                break;
+            }
+
+            double _size = (double)atoi(size_buf);
+            // assumed boundary...
+            double edge = 1024;
+
+            if(_size == -1) {
+                // command get wrong.
+                recv(sockfd, buff, BUFFSIZE, 0);
+                printf("%s\n", buff);
+                continue;
+            }
+            printf("it receive %d bytes data from remote peer.\n", (int)_size);
+
+            // just store it in a regular file.
+            int filefd = open("test.data", O_CREAT | O_WRONLY, 0666);
+            if(filefd < 0) {
+                perror("open()");
+                break;
+            }
+
+            ssize_t recv_size;
+            for(int i = 0; i < (int)ceil(_size / edge); i++) {
+                recv_size = recv(sockfd, buff, 1024, 0);
+                if(recv_size < 0) {
+                    perror("recv");
+                    break;
+                }
+                write(filefd, buff, recv_size);
+            }
+
+            close(filefd);
         }
 
         if(fds[0].revents & POLLIN) {
             char buff_in[1024];
             if(fgets(buff_in, sizeof(buff_in), stdin) == NULL) {
-                fprintf(stderr, "fgets: no input read.\n");
-                continue;
+                printf("exit.\n");
+                break;
             }
+            // remove the `\n' from stdin
+            buff_in[strlen(buff_in) - 1] = '\0';
 
             int len = strlen(buff_in);
             printf("len: %d\n", len);
 
+            bzero(buff, sizeof(buff));
             sprintf(buff, "%d", len);
             if(send(sockfd, buff, 4, 0) < 0) {
                 perror("send failure");
-                m_stop = 1;
+                break;
             }
             bzero(buff, sizeof(buff));
 
             if(send(sockfd, buff_in, len, 0) < 0) {
                 perror("send failure");
-                m_stop = 1;
+                break;
             }
 
         }
