@@ -1,49 +1,6 @@
-#include "core.h"
+#include "utils.h"
 #include "socket.h"
-#include <sys/epoll.h>
 #include <dirent.h>
-
-void setnonblocking(int fd)
-{
-    int flags;
-
-    if((flags = fcntl(fd, F_GETFL)) < 0) {
-        perror("fcntl: get the flags failure");
-        exit(-3);
-    }
-
-    flags |= O_NONBLOCK;
-
-    if((fcntl(fd, F_SETFL)) < 0) {
-        perror("fcntl: set the flags failure");
-        exit(-4);
-    }
-}
-
-
-// add the file description to the epoll events list.
-void addfd(int epollfd, int fd)
-{
-    assert(epollfd > 0);
-    assert(fd > 0);
-
-    struct epoll_event event;
-    event.data.fd = fd;
-    event.events = EPOLLIN | EPOLLET;
-    epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &event);
-    setnonblocking(fd);
-}
-
-
-void removefd(int epollfd, int fd)
-{
-    assert(epollfd > 0);
-    assert(fd > 0);
-
-    // There is a bug in Linux Kernel before 2.6.9, more details check it in man pages.
-    // I don't care cuz....
-    epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL);
-}
 
 
 char *get_check_filename(const char *buff)
@@ -151,6 +108,7 @@ int main(int argc, const char *args[])
                 // receive 4 bytes data, firstly.
                 ssize_t count = recv(events[i].data.fd, buff, 4, 0);
                 if(count == 0) {
+                    printf("a peer left\n");
                     removefd(epollfd, events[i].data.fd);
                     close(events[i].data.fd);
                     continue;
@@ -181,9 +139,6 @@ int main(int argc, const char *args[])
                 }
 
                 trans_data(events[i].data.fd, name);
-                // Just close the connection when the file were sent.23333
-                removefd(epollfd, events[i].data.fd);
-                close(events[i].data.fd);
             }
 
         }

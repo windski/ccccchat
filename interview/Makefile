@@ -2,10 +2,10 @@ CC = gcc
 CFLAGS = -Wall -std=c11 -Werror
 LDFLAGS = -lm
 
-OBJS = server.o socket.o client.o
+OBJS = server.o socket.o client.o utils.o
 
-server: server.o socket.o
-	$(CC) server.o socket.o -o server
+server: server.o socket.o utils.o
+	$(CC) server.o socket.o utils.o -o server
 
 client: client.o
 	$(CC) $(LDFLAGS) client.o -o client

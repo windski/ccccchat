@@ -17,6 +17,8 @@
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 
+#include <sys/epoll.h>
+
 #include <math.h>
 
 #define BUFFSIZE 1024

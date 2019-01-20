@@ -1,6 +1,36 @@
 #include "core.h"
 #include <poll.h>
 
+
+void recv_file(int sockfd, double size)
+{
+    // assumed boundary...
+    double edge = 1024;
+    char buff[BUFFSIZE];
+    bzero(buff, sizeof(buff));
+
+    // just store it in a regular file.
+    int filefd = open("test.data", O_CREAT | O_WRONLY, 0666);
+    if(filefd < 0) {
+        perror("open()");
+        close(filefd);
+        return ;
+    }
+
+    ssize_t recv_size;
+    for(int i = 0; i < (int)ceil(size / edge); i++) {
+        recv_size = recv(sockfd, buff, 1024, 0);
+        if(recv_size < 0) {
+            perror("recv");
+            break;
+        }
+        write(filefd, buff, recv_size);
+    }
+
+    close(filefd);
+}
+
+
 int main(int argc, const char *args[])
 {
     if(argc <= 2) {
@@ -37,7 +67,6 @@ int main(int argc, const char *args[])
     fds[1].events = POLLIN | POLLRDHUP;
     fds[1].revents = 0;
 
-    char buff[BUFFSIZE];
 
     while(1) {
         int ret = poll(fds, 2, -1);
@@ -52,17 +81,14 @@ int main(int argc, const char *args[])
             break;
         } else if(fds[1].revents & POLLIN) {
             // receive the data.
-            bzero(buff, sizeof(buff));
-
             char size_buf[1024];
+            char buff[BUFFSIZE];
             if(recv(sockfd, size_buf, 4, 0) < 0) {
                 perror("recv: Something goes error.");
                 break;
             }
 
             double _size = (double)atoi(size_buf);
-            // assumed boundary...
-            double edge = 1024;
 
             if(_size == -1) {
                 // command get wrong.
@@ -72,28 +98,13 @@ int main(int argc, const char *args[])
             }
             printf("it receive %d bytes data from remote peer.\n", (int)_size);
 
-            // just store it in a regular file.
-            int filefd = open("test.data", O_CREAT | O_WRONLY, 0666);
-            if(filefd < 0) {
-                perror("open()");
-                break;
-            }
-
-            ssize_t recv_size;
-            for(int i = 0; i < (int)ceil(_size / edge); i++) {
-                recv_size = recv(sockfd, buff, 1024, 0);
-                if(recv_size < 0) {
-                    perror("recv");
-                    break;
-                }
-                write(filefd, buff, recv_size);
-            }
-
-            close(filefd);
+            recv_file(sockfd, _size);
+            break;
         }
 
         if(fds[0].revents & POLLIN) {
             char buff_in[1024];
+            char buff[BUFFSIZE];
             if(fgets(buff_in, sizeof(buff_in), stdin) == NULL) {
                 printf("exit.\n");
                 break;
