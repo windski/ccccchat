@@ -2,10 +2,8 @@
 #include <poll.h>
 
 
-void recv_file(int sockfd, double size)
+void recv_file(int sockfd, uint64_t size)
 {
-    // assumed boundary...
-    double edge = 1024;
     char buff[BUFFSIZE];
     bzero(buff, sizeof(buff));
 
@@ -18,13 +16,15 @@ void recv_file(int sockfd, double size)
     }
 
     ssize_t recv_size;
-    for(int i = 0; i < (int)ceil(size / edge); i++) {
+    while(size > 0) {
         recv_size = recv(sockfd, buff, 1024, 0);
         if(recv_size < 0) {
             perror("recv");
             break;
         }
+
         write(filefd, buff, recv_size);
+        size -= recv_size;
     }
 
     close(filefd);
@@ -83,12 +83,12 @@ int main(int argc, const char *args[])
             // receive the data.
             char size_buf[1024];
             char buff[BUFFSIZE];
-            if(recv(sockfd, size_buf, 4, 0) < 0) {
+            if(recv(sockfd, size_buf, 1024, 0) < 0) {
                 perror("recv: Something goes error.");
                 break;
             }
 
-            double _size = (double)atoi(size_buf);
+            uint64_t _size = atoll(size_buf);
 
             if(_size == -1) {
                 // command get wrong.
@@ -96,7 +96,7 @@ int main(int argc, const char *args[])
                 printf("%s\n", buff);
                 continue;
             }
-            printf("it receive %d bytes data from remote peer.\n", (int)_size);
+            printf("it receive %lu bytes data from remote peer.\n", _size);
 
             recv_file(sockfd, _size);
             break;
@@ -117,7 +117,7 @@ int main(int argc, const char *args[])
 
             bzero(buff, sizeof(buff));
             sprintf(buff, "%d", len);
-            if(send(sockfd, buff, 4, 0) < 0) {
+            if(send(sockfd, buff, 1024, 0) < 0) {
                 perror("send failure");
                 break;
             }

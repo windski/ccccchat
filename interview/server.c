@@ -51,11 +51,18 @@ void trans_data(int sockfd, const char *name)
     char buff[BUFFSIZE];
     uint64_t filesize = get_filesize(name);
     sprintf(buff, "%lu", filesize);
-    send(sockfd, buff, 4, 0);
+    send(sockfd, buff, 1024, 0);
 
     int filefd = open(name, O_RDONLY);
-    if(sendfile(sockfd, filefd, NULL, filesize) < 0) {
-        perror("sendfile: send file failure");
+    ssize_t send_size;
+    while(filesize > 0) {
+        send_size = read(filefd, buff, 1024);
+
+        if(send(sockfd, buff, send_size, 0) < 0) {
+            perror("send");
+            break;
+        }
+        filesize -= send_size;
     }
 
     close(filefd);
@@ -106,7 +113,7 @@ int main(int argc, const char *args[])
                 bzero(buff, sizeof(buff));
 
                 // receive 4 bytes data, firstly.
-                ssize_t count = recv(events[i].data.fd, buff, 4, 0);
+                ssize_t count = recv(events[i].data.fd, buff, 1024, 0);
                 if(count == 0) {
                     printf("a peer left\n");
                     removefd(epollfd, events[i].data.fd);
@@ -132,7 +139,7 @@ int main(int argc, const char *args[])
                 char *name = get_check_filename(buff);
                 if(name == NULL) {
                     // get the wrong file.
-                    send(events[i].data.fd, "-1 ", 4, 0);
+                    send(events[i].data.fd, "-1 ", 1024, 0);
                     // send the tips.
                     send(events[i].data.fd, "file is not exist.", 19, 0);
                     continue;
