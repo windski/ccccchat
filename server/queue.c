@@ -102,20 +102,46 @@ void destroy_queue(queue_t *que)
 
 #ifdef TEST
 
-int main(void)
+static void *
+task(void *args)
 {
+    printf("queue is created..\n\n");
+
     queue_t *que = create_queue();
 
     char src[] = "test";
-    for(int i = 0; i < 19; i++) {
+    for(int i = 0; i < 19000; i++) {
         push_queue(que, src);
     }
 
-    for(int i = 0; i < 10; i++) {
-        printf("%s\n", pop_queue(que));
+    for(int i = 0; i < 10000; i++) {
+        printf("%s\n ", pop_queue(que));
     }
 
     destroy_queue(que);
+
+    printf("queue is destroied..\n\n");
+}
+
+
+int main(void)
+{
+#ifdef SINGLE_THREAD
+    task(NULL);
+#else
+
+# define THREAD_NUMS 20
+
+    pthread_t pids[THREAD_NUMS];
+    for(int i = 0; i < THREAD_NUMS; i++) {
+        pthread_create(&pids[i], NULL, task, NULL);
+    }
+
+    for(int i = 0; i < THREAD_NUMS; i++) {
+        pthread_join(pids[i], NULL);
+    }
+
+#endif
 
     return 0;
 }
