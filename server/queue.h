@@ -20,10 +20,10 @@ struct queue {
 
 typedef struct queue queue_t;
 
-extern queue_t *create_queue();
-extern void push_queue(queue_t *que, void *data);
-extern void *pop_queue(queue_t *que);
+extern queue_t *queue_create();
+extern void queue_push(queue_t *que, void *data);
+extern void *queue_pop(queue_t *que);
 
-extern void destroy_queue(queue_t *que);
+extern void queue_destroy(queue_t *que);
 
 #endif
