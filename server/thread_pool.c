@@ -2,10 +2,33 @@
 #include <stdlib.h>
 #include <assert.h>
 
+static void run(threadpool_t *pool)
+{
+    while(!(pool->isstop)) {
+        sem_wait(&(pool->sem));
+        pthread_mutex_lock(&(pool->mutex));
+        // 空队弹不出来...不管它
+        void *task = queue_pop(pool->workqueue);
+
+        pthread_mutex_unlock(&(pool->mutex));
+
+        if(task == NULL) {
+            continue;
+        }
+
+        // 执行真正的代码.
+        // task->cron();
+
+    }
+}
+
+
 static void *
 worker(void *args)
 {
-    // TODO: prepar to fill it.
+    threadpool_t *pool = (threadpool_t *)args;
+    run(pool);
+    return pool;
 }
 
 
@@ -13,7 +36,11 @@ void threadpool_append(threadpool_t *pool, void *task)
 {
     assert(pool != NULL && task != NULL);
 
+    pthread_mutex_lock(&(pool->mutex));
     queue_push(pool->workqueue, task);
+    pthread_mutex_unlock(&(pool->mutex));
+
+    sem_post(&(pool->sem));
 }
 
 
@@ -28,6 +55,7 @@ threadpool_t *threadpool_create(int _thread_num)
 
     pool->workqueue = queue_create();
     pthread_mutex_init(&(pool->mutex), NULL);
+    sem_init(&(pool->sem), 0, 0);
 
     for(int i = 0; i < _thread_num; i++) {
         // Just create the threads and set detach.
@@ -57,6 +85,7 @@ void threadpool_destroy(threadpool_t *pool)
     pthread_mutex_destroy(&(pool->mutex));
     queue_destroy(pool->workqueue);
     free(pool->threads);
+    sem_destroy(&(pool->sem));
 
     free(pool);
 }

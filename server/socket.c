@@ -34,5 +34,7 @@ int make_listen(int fd, int num)
         perror("make listen failure");
         exit(-1);
     }
+
+    return 0;
 }
 

@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-queue_t *create_queue()
+queue_t *queue_create()
 {
     queue_t *q = (queue_t *)malloc(sizeof(queue_t));
     assert(q != NULL);
@@ -18,7 +18,7 @@ queue_t *create_queue()
 }
 
 
-void push_queue(queue_t *que, void *data)
+void queue_push(queue_t *que, void *data)
 {
     assert(que != NULL);
 
@@ -38,7 +38,7 @@ void push_queue(queue_t *que, void *data)
 }
 
 
-void *pop_queue(queue_t *que)
+void *queue_pop(queue_t *que)
 {
     assert(que != NULL);
     struct queue_node *cur, *pre;
@@ -79,7 +79,7 @@ void *pop_queue(queue_t *que)
 }
 
 
-void destroy_queue(queue_t *que)
+void queue_destroy(queue_t *que)
 {
     assert(que != NULL);
 
@@ -105,20 +105,36 @@ void destroy_queue(queue_t *que)
 static void *
 task(void *args)
 {
+    queue_t *que = (queue_t *)args;
+
+    char src[] = "test";
+    for(int i = 0; i < 100; i++) {
+        queue_push(que, src);
+    }
+
+    for(int i = 0; i < 100; i++) {
+        printf("%s\n", queue_pop(que));
+    }
+
+    return NULL;
+}
+
+void task1(void)
+{
     printf("queue is created..\n\n");
 
-    queue_t *que = create_queue();
+    queue_t *que = queue_create();
 
     char src[] = "test";
     for(int i = 0; i < 19000; i++) {
-        push_queue(que, src);
+        queue_push(que, src);
     }
 
     for(int i = 0; i < 10000; i++) {
-        printf("%s\n ", pop_queue(que));
+        printf("%s\n ", queue_pop(que));
     }
 
-    destroy_queue(que);
+    queue_destroy(que);
 
     printf("queue is destroied..\n\n");
 }
@@ -127,14 +143,16 @@ task(void *args)
 int main(void)
 {
 #ifdef SINGLE_THREAD
-    task(NULL);
+    task();
 #else
 
 # define THREAD_NUMS 20
+    
+    queue_t *que = queue_create();
 
     pthread_t pids[THREAD_NUMS];
     for(int i = 0; i < THREAD_NUMS; i++) {
-        pthread_create(&pids[i], NULL, task, NULL);
+        pthread_create(&pids[i], NULL, task, que);
     }
 
     for(int i = 0; i < THREAD_NUMS; i++) {

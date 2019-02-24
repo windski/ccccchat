@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <semaphore.h>
 #include "queue.h"
 
 typedef struct thread_pool {
@@ -12,6 +13,7 @@ typedef struct thread_pool {
 
     queue_t *workqueue;
     pthread_mutex_t mutex;
+    sem_t sem;
 } threadpool_t;
 
 
