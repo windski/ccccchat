@@ -8,7 +8,7 @@ static void run(threadpool_t *pool)
         sem_wait(&(pool->sem));
         pthread_mutex_lock(&(pool->mutex));
         // 空队弹不出来...不管它
-        void *task = queue_pop(pool->workqueue);
+        task_t *task = (task_t *)queue_pop(pool->workqueue);
 
         pthread_mutex_unlock(&(pool->mutex));
 
@@ -17,8 +17,7 @@ static void run(threadpool_t *pool)
         }
 
         // 执行真正的代码.
-        // task->cron();
-
+        task->callback(task->args);
     }
 }
 

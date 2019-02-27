@@ -1,6 +1,7 @@
 #include "core.h"
 #include "utils.h"
 #include "socket.h"
+#include "thread_pool.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -14,6 +15,9 @@ int main(int argc, char *args[])
         printf("usage: %s port number\n", args[0]);
         return 1;
     }
+
+    threadpool_t *pool = threadpool_create(10);
+    assert(pool != NULL);
 
     int sockfd = create_socket(NULL, atoi(args[1]));
 
@@ -40,6 +44,8 @@ int main(int argc, char *args[])
         }
 
         for(int i = 0; i < user_counter + 1; i++) {
+
+            // there is a new connection.
             if((fds[i].fd == sockfd) && (fds[i].revents & POLLIN)) {
                 struct sockaddr_in cliaddr;
                 socklen_t socklen = sizeof(cliaddr);
@@ -66,6 +72,7 @@ int main(int argc, char *args[])
                 fds[user_counter].events = POLLIN | POLLRDHUP | POLLERR;
                 fds[user_counter].revents = 0;
                 printf("comes a new user, now have %d users\n", user_counter);
+
             } else if(fds[i].revents & POLLERR) {
                 printf("get an error from %d\n", fds[i].fd);
                 char errors[100];
@@ -75,6 +82,7 @@ int main(int argc, char *args[])
                     printf("get scoket option failed\n");
                 }
                 continue;
+
             } else if(fds[i].revents & POLLRDHUP) {
                 users[fds[i].fd] = users[fds[user_counter].fd];
                 close(fds[i].fd);
@@ -82,6 +90,7 @@ int main(int argc, char *args[])
                 i--;
                 user_counter--;
                 printf("a client left\n");
+
             } else if(fds[i].revents & POLLIN) {
                 int connfd = fds[i].fd;
                 memset(users[connfd].read_buff, 0, BUFFSIZE);

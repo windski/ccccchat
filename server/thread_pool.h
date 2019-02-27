@@ -6,6 +6,13 @@
 #include <semaphore.h>
 #include "queue.h"
 
+typedef void (*cb_p)(void *);
+
+typedef struct task {
+    void *args;
+    cb_p callback;
+} task_t;
+
 typedef struct thread_pool {
     int thread_nums;
     pthread_t *threads;
