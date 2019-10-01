@@ -1,33 +1,40 @@
 #ifndef THREAD_POOL_H_
 #define THREAD_POOL_H_
 
-#include <pthread.h>
-#include <stdbool.h>
-#include <semaphore.h>
-#include "queue.h"
+#include <thread>
+#include <condition_variable>
+#include <queue>
+#include <functional>
+#include <memory>
+#include <vector>
+#include <mutex>
+#include <future>
 
-typedef void (*cb_p)(void *);
+namespace chat {
+namespace thread_pool {
 
-typedef struct task {
-    void *args;
-    cb_p callback;
-} task_t;
+class ThreadPool {
+public:
+  ThreadPool(uint32_t num);
+  ~ThreadPool();
+  template <typename F, typename ... Args>
+  auto append(F&& f, Args&& ...)
+    -> std::future<typename std::result_of<F(Args ...)>::type>;
 
-typedef struct thread_pool {
-    int thread_nums;
-    pthread_t *threads;
-    bool isstop;
+private:
+  ThreadPool(const ThreadPool &);
+  ThreadPool operator=(const ThreadPool &);
 
-    queue_t *workqueue;
-    pthread_mutex_t mutex;
-    sem_t sem;
-} threadpool_t;
+  std::vector<std::thread> workers_;
+  bool is_stop_;
+  std::queue<std::function<void()>> workqueue_;
+  std::mutex mutex_;
+  std::condition_variable condi_;
+};
 
+}  // thread_pool
+}  // chat
 
-extern threadpool_t *threadpool_create(int _thread_num);
-extern void threadpool_append(threadpool_t *pool, void *task);
-
-extern void threadpool_destroy(threadpool_t *pool);
 
 #endif
 

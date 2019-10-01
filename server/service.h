@@ -11,5 +11,10 @@ typedef struct usergroup {
 
 int ugroup_create(int num);
 
+struct service {
+    int pollfd;
+    func_callback cb;
+};
+
 
 #endif

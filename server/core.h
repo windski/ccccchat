@@ -13,6 +13,8 @@
 #include <assert.h>
 #include <errno.h>
 
+#include "third_party/log.h"
+
 #define BUFFSIZE 4096
 
 #define _LIMIT 65535
@@ -22,5 +24,7 @@ typedef struct {
     char *write_buff;
     char read_buff[BUFFSIZE];
 } user_t;
+
+typedef void (*func_callback)(void *);
 
 #endif
