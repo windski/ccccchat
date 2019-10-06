@@ -1,5 +1,8 @@
 #include "utils.h"
 
+namespace chat {
+namespace external {
+
 int setnonblocking(int fd)
 {
     int flag;
@@ -17,4 +20,7 @@ int setnonblocking(int fd)
 
     return flag;
 }
+
+}  // external
+}  // chat
 

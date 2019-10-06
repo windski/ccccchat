@@ -1,49 +1,93 @@
 #include "poll.h"
+#include <cassert>
 
-int poll_create(int counts_)
-{
-    for (int i = 0; i < _LIMIT; i++) {
-        fds[i].fd = -1;
-        fds[i].events = 0;
-    }
+namespace chat {
+namespace io {
 
-    return poll(fds, counts_ + 1, -1);
+Poll::Poll(int num)
+  : num_(num) {
+  init();
 }
 
-int poll_registe_fd(int pollfd, int sockfd, int events)
-{
-    assert(pollfd > 0 && sockfd > 0);
+Poll::~Poll() {}
 
-    for (int i = 0; i < _LIMIT; i++) {
-        if (fds[i].fd == -1) {
-            fds[i].fd = sockfd;
-            fds[i].events = events;
-            fds[i].revents = 0;
-            return 0;
-        }
-    }
-
-    log_fatal("have no empty slot to registe.");
-    return -1;
+void Poll::init() {
+  pollfd poll;
+  poll.fd = -1;
+  poll.events = 0;
+  poll.revents = 0;
+  
+  for (int i = 0; i < num_; i++) {
+    fds_.push_back(poll);
+  }
 }
 
-int poll_unregiste_fd(int pollfd, int sockfd)
-{
-    assert(pollfd > 0 && sockfd > 0);
+int Poll::register_fd(int sockfd, int events) {
+  assert(sockfd > 0);
 
-    for (int i = 0; i < _LIMIT; i++) {
-        if (fds[i].fd == sockfd) {
-            fds[i].fd = -1;
-            fds[i].events = 0;
-            fds[i].revents = 0;
+  for (int i = 0; i < num_; i++) {
+    if (fds_[i].fd == -1) {
+      fds_[i].fd = sockfd;
+      fds_[i].events = events;
+      fds_[i].revents = 0;
 
-            return 0;
-        }
+      return 0;
+    }
+  }
+
+  log_fatal("have no empty slot to registe.");
+  return -1;
+}
+
+int Poll::unregister_fd(int sockfd) {
+  assert(sockfd > 0);
+
+  for (int i = 0; i < num_; i++) {
+    if (fds_[i].fd == sockfd) {
+      fds_[i].fd = -1;
+      fds_[i].events = 0;
+      fds_[i].revents = 0;
+
+      return 0;
+    }
+  }
+
+  log_fatal("should not doing here.");
+  assert(0);
+}
+
+std::vector<std::vector<int>> Poll::poll(int timeout) {
+  int ret = ::poll(fds_.data(), num_ + 1, timeout);
+
+  std::vector<std::vector<int>> result;
+  if (ret < 0) {
+    log_fatal("poll failure");
+    return result;
+  }
+
+  std::vector<int> read;
+  std::vector<int> write;
+  for (int i = 0; i < num_ + 1; i++) {
+    if (fds_[i].revents & POLLIN) {
+      read.push_back(fds_[i].fd);
+      ret--;
+    } else if (fds_[i].revents & POLLOUT) {
+      write.push_back(fds_[i].fd);
+      ret--;
     }
 
-    log_fatal("should not doing here.");
-    assert(0);
+    log_info("has redundant pollfd");
+    if (ret <= 0) {
+      break;
+    }
+  }
 
-    return -1;
+  result.push_back(read);
+  result.push_back(write);
+
+  return result;
 }
+
+}  // io
+}  // chat
 

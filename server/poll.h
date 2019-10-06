@@ -2,16 +2,27 @@
 #define POLL_H_
 
 #include "core.h"
-
 #include <poll.h>
+#include <vector>
 
-static struct pollfd fds[_LIMIT];
+namespace chat {
+namespace io {
 
-extern int poll_create(int counts_);
+class Poll {
+ public:
+  explicit Poll(int num);
+  ~Poll();
+  int register_fd(int sockfd, int events);
+  int unregister_fd(int sockfd);
+  std::vector<std::vector<int>> poll(int timeout);
+ private:
+  std::vector<pollfd> fds_;
+  int num_;
 
-extern int poll_registe_fd(int pollfd, int sockfd, int events);
+  void init();
+};
 
-extern int poll_unregiste_fd(int pollfd, int sockfd);
-
+}  // io
+}  // chat
 
 #endif

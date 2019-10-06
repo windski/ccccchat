@@ -6,8 +6,23 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-extern int create_socket(const char *ip, const int port);
+namespace chat {
+namespace net {
 
-extern int make_listen(int fd, int num);
+class Socket {
+ public:
+  Socket();
+  ~Socket();
+  int listen(int num);
+  void bind(const int &port);
+  int fd() const;
+
+ private:
+  int sockfd_;
+  struct sockaddr_in sockaddr_;
+};
+
+}  // net
+}  // chat
 
 #endif

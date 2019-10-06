@@ -1,40 +1,46 @@
 #include "socket.h"
 
-// default to use ipv4 family
-int create_socket(const char *ip, const int port)
+
+namespace chat {
+namespace net {
+
+Socket::Socket()
+  : sockfd_(-1) {
+  bzero(&sockaddr_, sizeof(sockaddr_));
+
+  sockfd_ = socket(PF_INET, SOCK_STREAM, 0);
+  assert(sockfd_ >= 0);
+}
+
+Socket::~Socket() {}
+
+void Socket::bind(const int &port) {
+  // configure the sock address
+  sockaddr_.sin_family = AF_INET;
+  sockaddr_.sin_port = htons(port);
+  sockaddr_.sin_addr.s_addr = INADDR_ANY;
+
+  if(::bind(sockfd_, (struct sockaddr *)&sockaddr_, sizeof(sockaddr_)) == -1) {
+    log_fatal("Can't bind the port");
+    exit(-1);
+  }
+}
+
+int Socket::listen(int num)
 {
-    int sockfd = -1;
-    struct sockaddr_in sockaddr;
-    bzero(&sockaddr, sizeof(sockaddr));
+  if(::listen(sockfd_, num) == -1) {
+    log_fatal("make listen failure");
+    exit(-1);
+  }
 
-    // configure the sock address
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_port = htons(port);
-    if(ip) {
-        inet_pton(AF_INET, ip, &sockaddr.sin_addr);
-    } else {
-        sockaddr.sin_addr.s_addr = INADDR_ANY;
-    }
+  return 0;
+}
 
-    sockfd = socket(PF_INET, SOCK_STREAM, 0);
-    assert(sockfd >= 0);
-
-    if(bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) == -1) {
-        perror("Can't bind the port");
-        exit(-1);
-    }
-
-    return sockfd;
+int Socket::fd() const {
+  return sockfd_;
 }
 
 
-int make_listen(int fd, int num)
-{
-    if(listen(fd, num) == -1) {
-        perror("make listen failure");
-        exit(-1);
-    }
-
-    return 0;
-}
+}  // net
+}  // chat
 

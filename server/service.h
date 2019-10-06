@@ -3,18 +3,34 @@
 
 #include "core.h"
 #include "thread_pool.h"
+#include "poll.h"
 
-typedef struct usergroup {
-    int usernum;
-    int *userids;
-} ugroup_t;
+#include <functional>
+#include <map>
 
-int ugroup_create(int num);
+namespace chat {
+namespace io {
+using thread_pool::ThreadPool;
+typedef std::function<void()> callback_t;
 
-struct service {
-    int pollfd;
-    func_callback cb;
+typedef struct {
+  callback_t rcallback, wcallback;
+} rw_callback_t;
+
+class Service {
+ public:
+  Service();
+  ~Service();
+  void register_readcb(int sockfd, callback_t cb);
+  void register_writecb(int sockfd, callback_t cb);
+  void run();
+ private:
+  io::Poll poll_;
+  ThreadPool threads_;
+  std::map<int, rw_callback_t> channel_;
 };
 
+}  // io
+}  // chat
 
 #endif

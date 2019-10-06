@@ -3,6 +3,13 @@
 
 #include "core.h"
 
+namespace chat {
+namespace external {
+
 extern int setnonblocking(int fd);
+
+}  // external
+}  // chat
+
 
 #endif

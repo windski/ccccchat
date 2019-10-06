@@ -1,22 +1,64 @@
 #include "service.h"
 
-static ugroup_t *groups = NULL;
+#include <cassert>
 
-int ugroup_create(int num)
-{
-    if(num < 0) {
-        return -1;
-    }
+namespace chat {
+namespace io {
 
-    groups = (ugroup_t *)malloc(sizeof(ugroup_t) * num);
-    assert(groups != NULL);
+Service::Service() 
+  : poll_(1024),
+  threads_(20) {}
 
-    for(int i = 0; i < num; i++) {
-        groups[i].usernum = 0;
-        groups[i].userids = (int *)malloc(sizeof(int) * _LIMIT);
-        assert(groups[i].userids != NULL);
-    }
+Service::~Service() {}
 
-    return 0;
+void Service::register_readcb(int sockfd, callback_t cb) {
+  assert(sockfd > 0);
+
+  auto iter = channel_.find(sockfd);
+  if (iter == channel_.end()) {
+    rw_callback_t tmpobj;
+    tmpobj.rcallback = cb;
+    channel_.emplace(sockfd, tmpobj);
+
+    poll_.register_fd(sockfd, POLLIN | POLLERR);
+  }
+
+  channel_.at(sockfd).rcallback = cb;
 }
+
+void Service::register_writecb(int sockfd, callback_t cb) {
+  assert(sockfd > 0);
+
+  auto iter = channel_.find(sockfd);
+  if (iter == channel_.end()) {
+    rw_callback_t tmpobj;
+    tmpobj.wcallback = cb;
+    channel_.emplace(sockfd, tmpobj);
+
+    poll_.register_fd(sockfd, POLLOUT);
+  }
+
+  channel_.at(sockfd).wcallback = cb;
+}
+
+void Service::run() {
+  while(1) {
+    auto matrix = poll_.poll(-1);
+    // read events
+    std::vector<int> list = matrix[0];
+    for (auto i : list) {
+      threads_.append(channel_.at(i).rcallback);
+    }
+
+    // write events
+    list = matrix[1];
+    for (auto i : list) {
+      threads_.append(channel_.at(i).wcallback);
+    }
+  }
+}
+
+
+}  // io
+}  // chat
 

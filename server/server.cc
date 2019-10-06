@@ -1,14 +1,13 @@
 #include "core.h"
 #include "utils.h"
 #include "socket.h"
+#include "poll.h"
 #include "thread_pool.h"
 
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <poll.h>
-#include <netinet/in.h>
 
 using chat::thread_pool::ThreadPool;
+using chat::net::Socket;
+using chat::io::Poll;
 int main(int argc, char *args[])
 {
   int ret;
@@ -18,10 +17,9 @@ int main(int argc, char *args[])
   }
 
   ThreadPool pool(20);
-
-  int sockfd = create_socket(NULL, atoi(args[1]));
-
-  make_listen(sockfd, 1024);
+  Socket sock;
+  sock.bind(atoi(args[1]));
+  sock.listen(1024);
 
   user_t *users = (user_t *)malloc(sizeof(user_t) * _LIMIT);
 
@@ -31,7 +29,7 @@ int main(int argc, char *args[])
     fds[i].fd = -1;
     fds[i].events = 0;
   }
-  fds[0].fd = sockfd;
+  fds[0].fd = sock.fd();
   fds[0].events = POLLIN | POLLERR;
   fds[0].revents = 0;
 
@@ -46,10 +44,10 @@ int main(int argc, char *args[])
     for(int i = 0; i < user_counter + 1; i++) {
 
       // there is a new connection.
-      if((fds[i].fd == sockfd) && (fds[i].revents & POLLIN)) {
+      if((fds[i].fd == sock.fd()) && (fds[i].revents & POLLIN)) {
         struct sockaddr_in cliaddr;
         socklen_t socklen = sizeof(cliaddr);
-        int connfd = accept(sockfd, (struct sockaddr *) &cliaddr, &socklen);
+        int connfd = accept(sock.fd(), (struct sockaddr *) &cliaddr, &socklen);
 
         if(connfd < 0) {
           printf("errno is: %d\n", errno);
@@ -66,7 +64,7 @@ int main(int argc, char *args[])
 
         user_counter++;
         users[connfd].useraddr = cliaddr;
-        setnonblocking(connfd);
+        chat::external::setnonblocking(connfd);
 
         fds[user_counter].fd = connfd;
         fds[user_counter].events = POLLIN | POLLRDHUP | POLLERR;
@@ -139,7 +137,6 @@ int main(int argc, char *args[])
   }
 
   free(users);
-  close(sockfd);
 
   return 0;
 }
